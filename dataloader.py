@@ -1,3 +1,5 @@
+import pdb
+
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -6,19 +8,20 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 class Excerpt_Dataset(Dataset):
 
-    def __init__(self, data, maxlen, tokenizer):
+    def __init__(self, data, maxlen, tokenizer,hyp_only = False):
         #Store the contents of the file in a pandas dataframe
         self.df = data.reset_index()
         #Initialize the tokenizer for the desired transformer model
         self.tokenizer = tokenizer
         #Maximum length of the tokens list to keep all the sequences of fixed size
         self.maxlen = maxlen
-
+        self.hyp_only = hyp_only
     def __len__(self):
         return self.df.shape[0]
 
     def __getitem__(self, index):
         #Select the sentence and label at the specified index in the data frame
+        # pdb.set_trace()
         excerpt1 = self.df.loc[index, 'pre']
         excerpt2 = self.df.loc[index, 'hyp']
         # print('premise',excerpt1)
@@ -29,8 +32,14 @@ class Excerpt_Dataset(Dataset):
             target = 0.0
         identifier = self.df.loc[index, 'id']
         #Preprocess the text to be suitable for the transformer
-        tokens1 = self.tokenizer.tokenize(excerpt1)
+        if self.hyp_only:
+            tokens1 = self.tokenizer.tokenize("")
+        else:
+            tokens1 = self.tokenizer.tokenize(excerpt1)
+
         tokens2 = self.tokenizer.tokenize(excerpt2)
+
+
         tokens = ['[CLS]'] + tokens1 + ['[SEP]'] + tokens2
         if len(tokens) < self.maxlen:
             tokens = tokens + ['[PAD]' for _ in range(self.maxlen - len(tokens))]
